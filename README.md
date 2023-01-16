@@ -1,0 +1,1 @@
+Some notes Scripts and code snippets I'd like to have access to, whereever I am <3
