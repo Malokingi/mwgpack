@@ -1,0 +1,34 @@
+b: memoTree v = 1, max = 0
+maxHeight v = 2, in_hMemo = false
+maxHeight v = 4, in_hMemo = false
+maxHeight v = 8, in_hMemo = false
+r(16) has no kids returning 1
+r(17) has no kids returning 1
+r is null returning 0
+maxHeight v = 5, in_hMemo = false
+r is null returning 0
+maxHeight v = 11, in_hMemo = false
+r is null returning 0
+r(23) has no kids returning 1
+r(3) has no kids returning 1
+a: memoTree v = 1, max = 4
+b: memoTree v = 2, max = 4
+maxHeight v = 4, in_hMemo = true
+maxHeight v = 5, in_hMemo = true
+a: memoTree v = 2, max = 4
+b: memoTree v = 4, max = 4
+maxHeight v = 8, in_hMemo = true
+r is null returning 0
+a: memoTree v = 4, max = 4
+b: memoTree v = 8, max = 4
+r(16) has no kids returning 1
+r(17) has no kids returning 1
+a: memoTree v = 8, max = 4
+b: memoTree v = 5, max = 4
+r is null returning 0
+maxHeight v = 11, in_hMemo = true
+a: memoTree v = 5, max = 4
+b: memoTree v = 11, max = 4
+r is null returning 0
+r(23) has no kids returning 1
+a: memoTree v = 11, max = 4
