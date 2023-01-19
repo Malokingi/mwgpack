@@ -89,3 +89,19 @@ class valid_palindrome:
         s = re.sub(r"[^a-zA-Z0-9]", "", s).lower()
         # s[::-1] returns the reverse of s b/c [::-1] says to iterate backwards starting from one space before the beginning (aka the end)
         return s == s[::-1]
+
+class binary_search:
+    # Basic Binary Search on a List
+    def search(self, nums: List[int], target: int) -> int:
+        l_idx, r_idx = 0, len(nums) - 1
+
+        while l_idx <= r_idx:
+            m_idx = int((l_idx + r_idx) / 2) # Rounds down
+            m_num = nums[m_idx]
+            if m_num == target:
+                return m_idx
+            if m_num > target:
+                r_idx = m_idx - 1
+            else:
+                l_idx = m_idx + 1
+        return -1
