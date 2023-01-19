@@ -6,6 +6,11 @@ class ListNode:
     def __init__(self, val=0, next=None):
         self.val = val
         self.next = next
+class TreeNode:
+    def __init__(self, x):
+        self.val = x
+        self.left = None
+        self.right = None
 
 class two_sum:
     # List
@@ -105,3 +110,64 @@ class binary_search:
             else:
                 l_idx = m_idx + 1
         return -1
+
+class flood_fill:
+    # Recursive
+    def floodFill(self, image: List[List[int]], sr: int, sc: int, color: int) -> List[List[int]]:
+        if image[sr][sc] == color: return image
+        doomed_color = image[sr][sc]
+        image[sr][sc] = color
+
+        if sr > 0 and image[sr - 1][sc] == doomed_color: # Checking Up
+            image = self.floodFill(image, sr - 1, sc, color)
+        if sc > 0 and image[sr][sc - 1] == doomed_color: # Checking Left
+            image = self.floodFill(image, sr, sc - 1, color)
+        if sr < len(image) - 1 and image[sr + 1][sc] == doomed_color: # Checking Down
+            image = self.floodFill(image, sr + 1, sc, color)
+        if sc < len(image[0]) - 1 and image[sr][sc + 1] == doomed_color: # Checking Right
+            image = self.floodFill(image, sr, sc + 1, color)
+        return image
+    # Resursive still but with a function
+    def floodFill(self, image: List[List[int]], sr: int, sc: int, color: int) -> List[List[int]]:
+        doomed_color = image[sr][sc]
+        r_range = range(0, len(image))
+        c_range = range(0, len(image[0]))
+
+        def fill(r, c):
+            if (
+                not r in r_range or 
+                not c in c_range or 
+                image[r][c] == color or 
+                image[r][c] != doomed_color
+            ): return
+            
+            image[r][c] = color
+            fill(r - 1, c)
+            fill(r, c - 1)
+            fill(r + 1, c)
+            fill(r, c + 1)
+        fill(sr, sc)
+        return image
+
+class lca_of_binary_tree:
+    # With a while loop
+    def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -> 'TreeNode':
+        a = min(p.val, q.val)
+        b = max(p.val, q.val)
+        target_range = range(a, b + 1)
+        while root:
+            # if the current value is between p and q (inclusive), we have the answer
+            if root.val in target_range: return root
+            if root.val > b: root = root.left
+            if root.val < a: root = root.right
+        return root
+    # With a recursive function
+    def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -> 'TreeNode':
+        pv, qv = p.val, q.val
+        def LCA(r):
+            rv = r.val
+            if pv < rv and qv < rv: return LCA(r.left)
+            if pv > rv and qv > rv: return LCA(r.right)
+            return r
+        return LCA(root)
+
