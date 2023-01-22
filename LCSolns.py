@@ -171,3 +171,20 @@ class lca_of_binary_tree:
             return r
         return LCA(root)
 
+class linked_list_cycle:
+    # Marking nodes as visited Single Link List
+    def hasCycle(self, head: Optional[ListNode]) -> bool:
+        if not head or not head.next: return False
+        while head:
+            if head.val == 100_001: return True;
+            head.val = 100_001
+            head = head.next
+        return False
+    # Floyd's (turt and hare) Algorithm
+    def hasCycle(self, head: Optional[ListNode]) -> bool:
+        slow = fast = head
+        while fast and fast.next:
+            slow = slow.next
+            fast = fast.next.next
+            if slow == fast: return True
+        return False
