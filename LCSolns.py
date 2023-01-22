@@ -188,3 +188,28 @@ class linked_list_cycle:
             fast = fast.next.next
             if slow == fast: return True
         return False
+
+class implement_queue_using_stacks:
+    def __init__(self):
+        self.stack_in, self.stack_out = [], []
+
+    def push(self, x: int) -> None:
+        self.stack_in.append(x)
+
+    def pop(self) -> int:
+        self.unload()
+        return self.stack_out.pop()
+
+    def peek(self) -> int:
+        self.unload()
+        return self.stack_out[-1]
+
+    def empty(self) -> bool:
+        return not (self.stack_in or self.stack_out)
+    
+    def unload(self) -> None:
+        if not self.stack_out:
+            while self.stack_in:
+                self.stack_out.append(self.stack_in.pop())
+        return
+
