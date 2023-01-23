@@ -1,0 +1,2 @@
+# Checking if a person is a valid age
+    =ISBETWEEN(DATEDIF(D3, NOW(), "Y"), 0, 19)
