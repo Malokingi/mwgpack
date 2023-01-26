@@ -1,2 +1,9 @@
 # Checking if a person is a valid age
     =ISBETWEEN(DATEDIF(D3, NOW(), "Y"), 0, 19)
+# Highlight Max in each row
+    range: C3:J12
+    fmla: =C3=MAX($C3:$J3)
+# Find and replace empty cells with 0
+    Find: ^s*$
+    Replace: 0
+    (Turn on regex)
