@@ -7,3 +7,10 @@
     Find: ^s*$
     Replace: 0
     (Turn on regex)
+# Backwards lookup
+    =HLOOKUP(
+        MAX(D7:J7),
+        {D7:J7;$D$4:$J$4},
+        2,
+        FALSE
+    )

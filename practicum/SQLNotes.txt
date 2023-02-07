@@ -1,0 +1,20 @@
+WINDOWS
+    # Here's a Q that shows what percent of each category make up the sales per store per day
+    SELECT DISTINCT
+        name_store AS store_name,
+        date_upd::date AS sale_date,
+        category AS category,
+        SUM( price ) OVER cat_w AS cat_tot,
+        SUM( price ) OVER store_w AS store_tot,
+        100 * ( SUM( price ) OVER cat_w ) /
+            ( SUM( price ) OVER store_name_w ) AS percent_x100
+    FROM
+        products_data_all
+    WHERE
+        date_upd BETWEEN '2019-06-01' AND '2019-06-06'
+    WINDOW
+        cat_w AS ( PARTITION BY name_store, category, date_upd ),
+        store_w AS ( PARTITION BY name_store, date_upd )
+    ORDER BY
+        sale_date,
+        store_name;
