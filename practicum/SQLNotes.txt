@@ -1,3 +1,36 @@
+SUBQUERIES
+    # Example
+    SELECT
+        EXTRACT(WEEK FROM SUBQ.trunc_date) AS week_number,
+        AVG(SUBQ.transactions_per_day) AS ave_week_transaction
+    FROM
+        (SELECT
+            COUNT(DISTINCT id_transaction) AS transactions_per_day,
+            DATE_TRUNC('day', date) AS trunc_date
+        FROM
+            transactions
+        GROUP BY
+            trunc_date) AS SUBQ
+    GROUP BY
+        week_number;
+    
+    # Using a SQ with LIKE and AVG
+    SELECT 
+        AVG( price ) AS avg_price
+    FROM
+        products_stores
+    WHERE
+        date_upd::date = '2019-06-01' AND
+        id_product IN (
+            SELECT
+                id_product
+            FROM
+                products
+            WHERE
+                name LIKE '%Moo%' AND
+                category = 'milk'
+        );
+
 WINDOWS
     # Here's a Q that shows what percent of each category make up the sales per store per day
     SELECT DISTINCT
@@ -18,3 +51,106 @@ WINDOWS
     ORDER BY
         sale_date,
         store_name;
+    
+    #Here's a Q that track a running total of price for each category for a specific store on a specific date
+    SELECT 
+        name_store AS store_name,
+        category,
+        name AS product_name,
+        price,
+        SUM( price ) OVER cat_w AS category_accum,
+        SUM( price ) OVER store_w AS store_accum
+    FROM
+        products_data_all
+    WHERE
+        date_upd::date = '2019-06-02' AND
+        name_store = 'Four'
+    WINDOW
+        cat_w AS ( PARTITION BY category ORDER BY id_product ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW ),
+        store_w AS ( PARTITION BY name_store ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW )
+    ORDER BY
+        id_product;
+    
+    # Here's a Q that ranks the cheapest product in each category in each store and sorts it as such
+    SELECT DISTINCT
+        name_store AS store_name,
+        category,
+        date_upd::date AS sale_date,
+        name AS product_name,
+        price,
+        RANK(  ) OVER store_cat_price_rank_w
+    FROM
+        products_data_all
+    WHERE
+        date_upd::date = '2019-06-02'
+    WINDOW
+        store_cat_price_rank_w AS ( PARTITION BY name_store, category ORDER BY price )
+    ORDER BY
+        name_store,
+        category,
+        rank;
+
+UNION
+    # Using UNION to count products sold on two consecutive Mondays, or whatever dow it is:
+    SELECT
+        COUNT(sq0.name)
+    FROM
+        ( SELECT DISTINCT
+            p.name AS name
+        FROM
+            products AS p
+        LEFT JOIN (
+            SELECT
+                t.id_product
+            FROM
+                transactions AS t
+            WHERE
+                CAST(t.date AS date) = '2019-06-01'
+        ) AS sq1 ON p.id_product = sq1.id_product
+        WHERE
+            sq1.id_product IS NOT NULL
+        --
+        UNION --ALL --UCO this to include all duplicate values
+        --
+        SELECT DISTINCT
+            p.name AS name
+        FROM
+            products AS p
+        LEFT JOIN (
+            SELECT
+                t.id_product
+            FROM
+                transactions AS t
+            WHERE
+                CAST(t.date AS date) = '2019-06-08'
+        ) AS sq2 ON p.id_product = sq2.id_product
+        WHERE
+            sq2.id_product IS NOT NULL
+        ) AS sq0;
+
+OTHER
+    # Practicing CASE WHEN '' THEN ELSE end
+    SELECT
+        name,
+        CASE WHEN weight IS NOT NULL THEN
+            weight
+        WHEN units = 'oz' THEN
+            '23.0705263269575'
+        WHEN units = 'ct' THEN
+            '10.0'
+        WHEN units = 'pk' THEN
+            '12.0909090909091'
+        WHEN units = 'gal' THEN
+            '0.650793650793651'
+        WHEN units = '%' THEN
+            '1.0'
+        WHEN units = 'pt' THEN
+            '1.0'
+        WHEN units = 'qt' THEN
+            '1.0'
+        ELSE
+            '-1'
+        END AS weight_full
+    FROM
+        products;
+
