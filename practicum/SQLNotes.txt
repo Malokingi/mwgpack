@@ -154,3 +154,34 @@ OTHER
     FROM
         products;
 
+    # Retrieve from the trips table all the rides that started in the Loop on a Saturday and ended at O'Hare. Get the weather conditions and duration for each ride. Ignore rides for which data on weather conditions is not available.
+    SELECT
+        t.start_ts,
+        subq_w.weather_conditions,
+        t.duration_seconds
+    FROM
+        trips AS t LEFT JOIN (-- 't' is for  'trips'
+            SELECT
+                ts,
+                CASE WHEN (
+                    description LIKE '%rain%' OR
+                    description LIKE '%storm%'
+                ) THEN
+                    'Bad'
+                ELSE
+                    'Good'
+                END AS weather_conditions
+            FROM
+                weather_records
+            GROUP BY
+                ts,
+                weather_conditions
+        ) AS subq_w -- 'w' is for 'weather_records'
+            ON t.start_ts = subq_w.ts
+    WHERE
+        t.pickup_location_id = 50 AND -- neighborhood_id = 'Loop'
+        t.dropoff_location_id = 63 AND -- neighborhood_id = 'O'Hare'
+        EXTRACT(isodow FROM t.start_ts) = 6 AND -- 6 = Day of the Week is Satruday
+        subq_w.weather_conditions IS NOT NULL
+    ORDER BY
+        t.trip_id;

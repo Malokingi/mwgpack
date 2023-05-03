@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Check if branch name was provided as argument
+if [ -z "$1" ]; then
+  echo "Usage: $0 <branch_name>"
+  exit 1
+fi
+
+# Check if branch already exists
+if git show-ref --verify --quiet "refs/heads/$1"; then
+  echo "Branch $1 already exists. Checking out and pulling latest changes..."
+  git checkout $1
+  git pull
+else
+  echo "Branch $1 does not exist. Creating new branch..."
+  git checkout -b $1
+  git push --set-upstream origin $1
+fi
