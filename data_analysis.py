@@ -70,7 +70,7 @@ def group_by_cohorts_number_of_purchaces(filepath):
 
     return grouped_by_cohorts
 
-def show_purchaces_per_player_over_time_and_lifetime(filepath):
+def find_purchaces_per_player_over_time_and_lifetime(filepath):
     purchases_grouped_by_cohorts = group_by_cohorts_number_of_purchaces(filepath)
 
     # adda column indicating the number of purchaces per player per month
@@ -99,7 +99,7 @@ def show_purchaces_per_player_over_time_and_lifetime(filepath):
     print(lifetime_pivot) # Print the pivot table
 
 def make_a_avg_purchase_size_heatmap(filepath):
-    revenue_per_user_pivot = pd.read_csv('/datasets/revenue_pivot.csv')
+    revenue_per_user_pivot = pd.read_csv(filepath)
     revenue_per_user_pivot = revenue_per_user_pivot.set_index('first_order_month')
 
     # Set the figure size
@@ -197,7 +197,7 @@ def add_first_order_and_timeline_cols(filepath):
 def filter_out_orders_gt_30_days(df):
     return df[df['time_to_event'] < '30 days']
 
-def display_ret_rate_by_behavior(filepath):
+def find_ret_rate_by_behavior(filepath):
     events = add_first_order_and_timeline_cols(filepath)
     filtered_events = filter_out_orders_gt_30_days(events)
 
@@ -225,7 +225,6 @@ def display_ret_rate_by_behavior(filepath):
 
     printRetentionRate(events[events['is_in_behavioral_cohort'] == 'yes'])
 
-
 def printRetentionRate(df):
     cohorts = (
         df.groupby(['first_coffee_week', 'cohort_lifetime'], as_index=False)
@@ -247,3 +246,77 @@ def printRetentionRate(df):
     print(cohorts.groupby(['cohort_lifetime'])['retention'].mean())
 
     cohorts.groupby(['cohort_lifetime'])['retention'].mean().plot.bar()
+
+def find_average_cum_ltv_at_6mo(order_fp, cost_fp):
+    orders = add_first_order_date_and_month_categories(order_fp)
+    costs = add_first_order_date_and_month_categories(cost_fp)
+
+    first_orders = (
+        orders.groupby('uid')
+        .agg({'order_month': 'min'})
+        .reset_index()
+    )
+    first_orders.columns = ['uid', 'first_order_month']
+
+    cohort_sizes = (
+        first_orders.groupby('first_order_month')
+        .agg({'uid': 'nunique'})
+        .reset_index()
+    )
+    cohort_sizes.columns = ['first_order_month', 'n_buyers']
+
+    margin_rate = 0.4
+
+    orders_ = pd.merge(orders, first_orders, on='uid')
+    cohorts = (
+        orders_.groupby(['first_order_month', 'order_month'])
+        .agg({'revenue': 'sum'})
+        .reset_index()
+    )
+    report = pd.merge(cohort_sizes, cohorts, on='first_order_month')
+
+    report['gp'] = report['revenue'] * margin_rate
+    report['age'] = ((
+            report['order_month'] - report['first_order_month']
+        ) / np.timedelta64(1, 'M')
+    ).round().astype('int')
+
+    report['ltv'] = report['gp'] / report['n_buyers']
+
+    result = report.pivot_table(
+        index='first_order_month',
+        columns='age',
+        values='ltv',
+        aggfunc='mean'
+    ).round()
+
+    result = result.fillna('')
+
+    monthly_costs = costs.groupby('month').sum()
+
+    report_ = pd.merge(
+        report,
+        monthly_costs,
+        left_on='first_order_month',
+        right_on='month'
+    )
+    report_['cac'] = report_['costs'] / report_['n_buyers']
+    report_['romi'] = report_['ltv'] / report_['cac']
+
+    result = report_.pivot_table(
+        index='first_order_month',
+        columns='age',
+        values='romi',
+        aggfunc='mean'
+    )
+
+    result = report_.pivot_table(
+        index='first_order_month',
+        columns='age',
+        values='ltv',
+        aggfunc='mean'
+    )
+
+    m6_cum_ltv = result.cumsum(axis=1).mean(axis=0)[5]
+
+    print('Average LTV for 6 months from the first order:', m6_cum_ltv)
