@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+from scipy import stats as st
 
 def add_first_order_date_and_month_categories(filepath):
     df = pd.read_csv(filepath)
@@ -320,3 +321,82 @@ def find_average_cum_ltv_at_6mo(order_fp, cost_fp):
     m6_cum_ltv = result.cumsum(axis=1).mean(axis=0)[5]
 
     print('Average LTV for 6 months from the first order:', m6_cum_ltv)
+
+def load_csv_and_convert_start_and_end_date_to_dt(filepath):
+    df = pd.read_csv(filepath)
+
+    df['session_start_ts'] = pd.to_datetime(df['session_start_ts'], format="%Y-%m-%d %H:%M")
+    df['session_end_ts'] = pd.to_datetime(df['session_end_ts'], format="%Y-%m-%d %H:%M")
+
+    return df
+
+def find_and_print_sticky_wau_and_mau(filepath):
+    users_data = load_csv_and_convert_start_and_end_date_to_dt(filepath)
+
+    users_data['session_year']  = users_data['session_start_ts'].dt.isocalendar().year
+    users_data['session_month'] = users_data['session_start_ts'].dt.month
+    users_data['session_week']  = users_data['session_start_ts'].dt.isocalendar().week
+    users_data['session_date'] = users_data['session_start_ts'].dt.date
+
+    mau_total = (
+        users_data.groupby(['session_year', 'session_month'])
+        .agg({'id': 'nunique'})
+        .mean()
+    )
+
+    wau_total = (
+        users_data.groupby(['session_year', 'session_week'])
+        .agg({'id': 'nunique'})
+        .mean()
+    )
+
+    dau_total = (
+        users_data.groupby('session_date')
+        .agg({'id': 'nunique'})
+        .mean()
+    )
+
+    sticky_wau = (dau_total / wau_total) * 100
+    sticky_mau = (dau_total / mau_total) * 100
+
+    print(f'sticky_wau = {sticky_wau}')
+    print(f'sticky_mau = {sticky_mau}')
+
+def find_and_print_avg_session_length(filepath):
+    users_data = load_csv_and_convert_start_and_end_date_to_dt(filepath)
+    
+    users_data['session_duration_sec'] = (
+        users_data['session_end_ts'] - users_data['session_start_ts']
+    ).dt.seconds
+
+    # users_data['session_duration_sec'].hist(bins=100)
+
+    asl = users_data['session_duration_sec'].mode()
+
+    print(asl)
+
+def find_average_visit_duration_and_test_hypothesis_for_given_yandex_metrika_logs(filepath):
+    logs = pd.read_csv(filepath)
+
+    # drop nonpositive durations
+    logs_with_duration = logs[logs['ym:s:visitDuration'] > 0]
+
+    ad_visits = logs_with_duration[ logs_with_duration['ym:s:lastTrafficSource'] == 'ad' ]
+    organic_visits = logs_with_duration[ logs_with_duration['ym:s:lastTrafficSource'] == 'organic' ]
+
+    ad_visits_durations = ad_visits['ym:s:visitDuration']
+    organic_visits_durations = organic_visits['ym:s:visitDuration']
+
+    # print average durations for each cohort
+    print(ad_visits_durations.mean())
+    print(organic_visits_durations.mean())
+
+    # test hypothesis with given alpha value and st.ttest_ind
+    alpha = 0.05
+
+    results = st.ttest_ind(ad_visits_durations, organic_visits_durations)
+
+    if results.pvalue < alpha:
+        print("Rejecting the null hypothesis")
+    else:
+        print("Failed to reject the null hypothesis")
